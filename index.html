@@ -364,6 +364,7 @@ Hier könnte deine nächste Idee stehen ✨</textarea>
         </div>
       </div>
       <p class="privacy"><span id="privacyText">Alles bleibt lokal auf diesem Gerät. Keine Anmeldung, kein Upload, keine Internetverbindung nötig.</span><span class="version">v0.5.0</span></p>
+      <footer class="privacy"><span id="aiCredit">Idee und Umsetzung: Ralf Neuhäuser mit KI-Unterstützung.</span> <a href="https://ralfneuhaeuser.de" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">ralfneuhaeuser.de</a> · <a href="https://github.com/ralfneuhaeuser/pocket-matrix" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">GitHub · Pocket Matrix</a></footer>
     </div>
   </section>
 
@@ -2782,6 +2783,7 @@ var qrcode = function() {
       state.language = ["de", "en", "ja"].includes(language) ? language : "de";
       $("optionsSummary").textContent = {de: "Weitere Möglichkeiten & Einstellungen", en: "More options & settings", ja: "その他の機能と設定"}[state.language];
       document.documentElement.lang = state.language;
+      $("aiCredit").textContent = {de: "Idee und Umsetzung: Ralf Neuhäuser mit KI-Unterstützung.", en: "Concept and implementation: Ralf Neuhäuser with AI assistance.", ja: "企画・制作：Ralf Neuhäuser（AIの支援を活用）。"}[state.language];
       $("language").value = state.language;
       translatedIds.forEach(id => { const el = $(id); if (!el) return; htmlIds.has(id) ? el.innerHTML = t(id) : el.textContent = t(id); });
       $("language").setAttribute("aria-label", t("languageAria"));
