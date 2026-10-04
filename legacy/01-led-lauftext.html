@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#050505">
+  <title>LED-Lauftext</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f4f1e8;
+      --muted: #9e9b91;
+      --line: #34342f;
+      --panel: #11120f;
+      --panel-2: #191a16;
+      --accent: #ffb000;
+      --accent-ink: #241500;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; background: #050505; }
+    body {
+      color: var(--ink);
+      font: 16px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overscroll-behavior: none;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 3px solid #ffd36a;
+      outline-offset: 2px;
+    }
+    .editor {
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: max(22px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+      background:
+        radial-gradient(circle at 10% 0%, rgba(255,176,0,.13), transparent 36rem),
+        #090a08;
+    }
+    .editor-inner { width: min(920px, 100%); margin: 0 auto; }
+    .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: .78rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(2rem, 8vw, 4.4rem); line-height: .98; letter-spacing: -.055em; }
+    .intro { max-width: 680px; margin: 14px 0 24px; color: #b8b5aa; font-size: clamp(1rem, 2.8vw, 1.16rem); }
+    .card { border: 1px solid var(--line); border-radius: 20px; background: rgba(17,18,15,.92); box-shadow: 0 22px 70px rgba(0,0,0,.3); overflow: hidden; }
+    .section { padding: 18px; border-bottom: 1px solid var(--line); }
+    .section:last-child { border-bottom: 0; }
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 10px; }
+    .section-title { margin: 0; font-size: .9rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .hint, .tiny { color: var(--muted); font-size: .82rem; }
+    textarea {
+      width: 100%; min-height: 148px; resize: vertical; padding: 14px 15px;
+      border: 1px solid #44443e; border-radius: 12px; color: #fff; background: #070806;
+      line-height: 1.45;
+    }
+    .icon-row { display: flex; gap: 7px; padding: 10px 0 2px; overflow-x: auto; scrollbar-width: thin; }
+    .icon-button {
+      flex: 0 0 auto; min-width: 44px; height: 42px; padding: 0 10px;
+      border: 1px solid #3d3d37; border-radius: 10px; color: #fff; background: var(--panel-2); font-size: 1.15rem;
+    }
+    .icon-button:hover { border-color: var(--accent); background: #252319; }
+    .file-zone {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px;
+      border: 1px dashed #55554e; border-radius: 13px; background: #0b0c09;
+      transition: border-color .2s, background .2s;
+    }
+    .file-zone.drag { border-color: var(--accent); background: #201b0e; }
+    .file-zone strong { display: block; }
+    .file-zone input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .button, .select-like {
+      min-height: 44px; border: 1px solid #44443e; border-radius: 11px; padding: 10px 14px; color: var(--ink); background: #20211d;
+    }
+    .button:hover { border-color: #6a695f; background: #292a25; }
+    .button.primary { border-color: var(--accent); color: var(--accent-ink); background: var(--accent); font-weight: 900; }
+    .button.primary:hover { filter: brightness(1.09); }
+    .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 15px 18px; }
+    .setting { display: grid; gap: 7px; }
+    .setting label { display: flex; justify-content: space-between; gap: 10px; color: #d5d2c8; font-size: .88rem; font-weight: 700; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    input[type="color"] { width: 100%; height: 44px; padding: 4px; border: 1px solid #44443e; border-radius: 11px; background: #20211d; }
+    select { width: 100%; }
+    .switch-row { display: flex; flex-wrap: wrap; gap: 12px 18px; margin-top: 16px; }
+    .check { display: flex; align-items: center; gap: 8px; color: #cbc8be; font-size: .9rem; }
+    .check input { width: 19px; height: 19px; accent-color: var(--accent); }
+    .actions { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .actions .button.primary { min-width: min(260px, 62vw); }
+    .privacy { max-width: 440px; margin: 12px 0 0; color: #74746d; font-size: .75rem; }
+
+    .display { position: fixed; inset: 0; z-index: 10; background: #000; touch-action: manipulation; }
+    .display[hidden], .editor[hidden] { display: none; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .display-controls {
+      position: absolute; z-index: 2; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+      display: flex; align-items: center; gap: 8px; padding: 7px;
+      border: 1px solid rgba(255,255,255,.14); border-radius: 14px; background: rgba(15,15,13,.8); backdrop-filter: blur(12px);
+      opacity: .1; transition: opacity .2s;
+    }
+    .display:hover .display-controls, .display-controls:focus-within, .display-controls.visible { opacity: 1; }
+    .round-button { width: 44px; height: 44px; border: 0; border-radius: 10px; color: #fff; background: rgba(255,255,255,.1); font-size: 1.1rem; }
+    .round-button:hover { background: rgba(255,255,255,.2); }
+    .counter {
+      position: absolute; left: max(14px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom));
+      padding: 5px 9px; border-radius: 99px; color: rgba(255,255,255,.58); background: rgba(0,0,0,.35); font-size: .72rem;
+      opacity: 0; transition: opacity .2s;
+    }
+    .display-controls.visible ~ .counter { opacity: 1; }
+    .toast {
+      position: fixed; z-index: 50; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translate(-50%, 18px);
+      max-width: calc(100vw - 32px); padding: 10px 14px; border-radius: 10px; color: #17120a; background: #ffd36a;
+      font-size: .86rem; font-weight: 800; opacity: 0; pointer-events: none; transition: .2s;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 640px) {
+      .settings-grid { grid-template-columns: 1fr; }
+      .section { padding: 15px; }
+      .section-head { align-items: flex-start; flex-direction: column; gap: 3px; }
+      .file-zone { align-items: flex-start; flex-direction: column; }
+      .actions { align-items: stretch; flex-direction: column-reverse; }
+      .actions .button.primary { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { .display-controls, .toast { transition: none; } }
+  </style>
+</head>
+<body>
+  <section class="editor" id="editor">
+    <div class="editor-inner">
+      <p class="eyebrow">Offline · eine Datei · Punktmatrix</p>
+      <h1>LED-Lauftext</h1>
+      <p class="intro">Text eingeben, Display starten, fertig. Alles bleibt lokal auf diesem Gerät und funktioniert auch ohne Internet.</p>
+
+      <div class="card">
+        <div class="section">
+          <div class="section-head">
+            <h2 class="section-title">1 · Lauftexte</h2>
+            <span class="hint">Eine Zeile = eine Nachricht</span>
+          </div>
+          <textarea id="messages" aria-label="Lauftexte" spellcheck="true">Willkommen!
+Programm und Hinweise
+Hallo Welt!</textarea>
+          <div class="icon-row" aria-label="Symbole einfügen">
+            <button class="icon-button" data-symbol="❤️" title=":herz:">❤️</button>
+            <button class="icon-button" data-symbol="😊" title=":smile:">😊</button>
+            <button class="icon-button" data-symbol="📻" title=":radio:">📻</button>
+            <button class="icon-button" data-symbol="⚠️" title=":warnung:">⚠️</button>
+            <button class="icon-button" data-symbol="☀️" title=":sonne:">☀️</button>
+            <button class="icon-button" data-symbol="📍" title=":ort:">📍</button>
+            <button class="icon-button" data-symbol="⚡" title=":blitz:">⚡</button>
+            <button class="icon-button" data-symbol="★" title=":stern:">★</button>
+            <button class="icon-button" data-symbol="✓" title=":check:">✓</button>
+            <button class="icon-button" data-symbol="☮" title=":frieden:">☮</button>
+            <button class="icon-button" data-symbol="@" title=":at:">@</button>
+            <button class="icon-button" data-symbol="#" title=":hashtag:">#</button>
+          </div>
+          <div class="tiny">Kürzel funktionieren ebenfalls: <b>:herz:</b> <b>:smile:</b> <b>:radio:</b> <b>:warnung:</b> <b>:sonne:</b> <b>:ort:</b></div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h2 class="section-title">2 · TXT-Datei (optional)</h2>
+            <span class="hint" id="fileStatus">Keine Datei gewählt</span>
+          </div>
+          <div class="file-zone" id="fileZone">
+            <div><strong>TXT-Datei hineinziehen</strong><span class="tiny">oder auf „Datei wählen“ tippen · UTF-8 · eine Zeile je Nachricht</span></div>
+            <label class="button" for="fileInput">Datei wählen</label>
+            <input id="fileInput" type="file" accept=".txt,text/plain">
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2 class="section-title">3 · Anzeige</h2><span class="hint">Die letzten Werte werden gespeichert</span></div>
+          <div class="settings-grid">
+            <div class="setting">
+              <label for="speed"><span>Geschwindigkeit</span><output id="speedOut">90 px/s</output></label>
+              <input id="speed" type="range" min="15" max="240" step="5" value="90">
+            </div>
+            <div class="setting">
+              <label for="dotSize"><span>LED-Größe</span><output id="dotOut">8 px</output></label>
+              <input id="dotSize" type="range" min="5" max="16" step="1" value="8">
+            </div>
+            <div class="setting">
+              <label for="direction"><span>Laufrichtung</span></label>
+              <select id="direction" class="select-like"><option value="left">← nach links</option><option value="right">nach rechts →</option></select>
+            </div>
+            <div class="setting">
+              <label for="textColor"><span>LED-Farbe</span></label>
+              <input id="textColor" type="color" value="#ffb000">
+            </div>
+          </div>
+          <div class="switch-row">
+            <label class="check"><input id="glow" type="checkbox" checked> Leuchten</label>
+            <label class="check"><input id="inactive" type="checkbox" checked> inaktive LEDs zeigen</label>
+            <label class="check"><input id="randomColors" type="checkbox"> Farbe je Nachricht wechseln</label>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="actions">
+            <span class="tiny">Im Display: tippen = Bedienung · Leertaste = Pause · E = zurück</span>
+            <button class="button primary" id="startButton">Display starten ↗</button>
+          </div>
+        </div>
+      </div>
+      <p class="privacy">Die Anwendung lädt nichts hoch. Ein Browser darf lokale Dateien aus Sicherheitsgründen nur lesen, nachdem du sie bewusst ausgewählt hast.</p>
+    </div>
+  </section>
+
+  <section class="display" id="display" hidden aria-label="LED-Lauftextdisplay">
+    <canvas id="canvas"></canvas>
+    <div class="display-controls" id="displayControls">
+      <button class="round-button" id="pauseButton" title="Pause / Weiter" aria-label="Pause oder Weiter">Ⅱ</button>
+      <button class="round-button" id="fullscreenButton" title="Vollbild" aria-label="Vollbild">⛶</button>
+      <button class="round-button" id="editButton" title="Einstellungen" aria-label="Einstellungen">⚙</button>
+    </div>
+    <div class="counter" id="counter">1 / 1</div>
+  </section>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+  (() => {
+    "use strict";
+    const $ = (id) => document.getElementById(id);
+    const editor = $("editor"), display = $("display"), canvas = $("canvas");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const low = document.createElement("canvas"), lowCtx = low.getContext("2d", { willReadFrequently: true });
+    const controls = $("displayControls"), toast = $("toast");
+    const fields = ["messages","speed","dotSize","direction","textColor","glow","inactive","randomColors"];
+    const shortcuts = {
+      ":herz:": "❤️", ":smile:": "😊", ":radio:": "📻", ":warnung:": "⚠️", ":sonne:": "☀️",
+      ":ort:": "📍", ":blitz:": "⚡", ":stern:": "★", ":check:": "✓", ":frieden:": "☮", ":at:": "@", ":hashtag:": "#"
+    };
+    const palette = ["#ffb000", "#ff3b30", "#34c759", "#00d8ff", "#bf5af2", "#ff7eb6"];
+    const state = { running: false, paused: false, messageIndex: 0, offset: 0, lastTime: 0, width: 0, gridW: 0, gridH: 0, pitch: 8, messages: [], hideTimer: 0 };
+
+    function expandShortcuts(text) {
+      return Object.entries(shortcuts).reduce((out, [key, value]) => out.split(key).join(value), text);
+    }
+    function getMessages() {
+      return $("messages").value.split(/\r?\n/).map(s => expandShortcuts(s.trim())).filter(Boolean);
+    }
+    function save() {
+      try {
+        const data = {};
+        fields.forEach(id => { const el = $(id); data[id] = el.type === "checkbox" ? el.checked : el.value; });
+        localStorage.setItem("led-lauftext-v1", JSON.stringify(data));
+      } catch (_) {}
+    }
+    function load() {
+      try {
+        const data = JSON.parse(localStorage.getItem("led-lauftext-v1") || "null");
+        if (!data) return;
+        fields.forEach(id => { if (!(id in data)) return; const el = $(id); el.type === "checkbox" ? el.checked = !!data[id] : el.value = data[id]; });
+      } catch (_) {}
+      updateOutputs();
+    }
+    function updateOutputs() {
+      $("speedOut").value = $("speed").value + " px/s";
+      $("dotOut").value = $("dotSize").value + " px";
+    }
+    function showToast(message) {
+      toast.textContent = message; toast.classList.add("show");
+      clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+    async function readFile(file) {
+      if (!file) return;
+      if (!/\.txt$/i.test(file.name) && file.type && file.type !== "text/plain") { showToast("Bitte eine TXT-Datei wählen."); return; }
+      try {
+        const text = await file.text();
+        const messages = text.replace(/^\uFEFF/, "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+        if (!messages.length) throw new Error("empty");
+        $("messages").value = messages.join("\n");
+        $("fileStatus").textContent = file.name + " · " + messages.length + (messages.length === 1 ? " Nachricht" : " Nachrichten");
+        save(); showToast("TXT-Datei geladen");
+      } catch (_) { showToast("Die Datei konnte nicht gelesen werden."); }
+    }
+    function insertSymbol(symbol) {
+      const area = $("messages"), start = area.selectionStart, end = area.selectionEnd;
+      area.value = area.value.slice(0,start) + symbol + area.value.slice(end);
+      area.focus(); area.selectionStart = area.selectionEnd = start + symbol.length; save();
+    }
+    function resizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = display.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
+      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+      state.pitch = Math.max(4, Number($("dotSize").value) * dpr);
+      state.gridW = Math.max(1, Math.floor(canvas.width / state.pitch));
+      state.gridH = Math.max(1, Math.floor(canvas.height / state.pitch));
+      low.width = state.gridW; low.height = state.gridH;
+      state.width = measureMessage(state.messages[state.messageIndex] || "");
+    }
+    function fontSpec() {
+      const size = Math.max(7, Math.floor(state.gridH * .68));
+      return `900 ${size}px ui-sans-serif, system-ui, -apple-system, "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+    }
+    function measureMessage(text) {
+      lowCtx.font = fontSpec();
+      return Math.ceil(lowCtx.measureText(text).width) + 4;
+    }
+    function resetMessage() {
+      state.offset = 0;
+      state.width = measureMessage(state.messages[state.messageIndex] || "");
+      $("counter").textContent = `${state.messageIndex + 1} / ${state.messages.length}`;
+    }
+    function nextMessage() {
+      state.messageIndex = (state.messageIndex + 1) % state.messages.length;
+      resetMessage();
+    }
+    function currentColor() {
+      return $("randomColors").checked ? palette[state.messageIndex % palette.length] : $("textColor").value;
+    }
+    function hexToRgb(hex) {
+      const n = parseInt(hex.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255];
+    }
+    function drawDots() {
+      const W = canvas.width, H = canvas.height, p = state.pitch, r = Math.max(1.1, p * .37);
+      ctx.fillStyle = "#030303"; ctx.fillRect(0,0,W,H);
+      if ($("inactive").checked) {
+        ctx.beginPath();
+        for (let y=0; y<state.gridH; y++) for (let x=0; x<state.gridW; x++) {
+          ctx.moveTo((x+.5)*p+r, (y+.5)*p); ctx.arc((x+.5)*p,(y+.5)*p,r,0,Math.PI*2);
+        }
+        ctx.fillStyle = "#171713"; ctx.fill();
+      }
+      const image = lowCtx.getImageData(0,0,state.gridW,state.gridH).data;
+      const groups = new Map();
+      const fallback = hexToRgb(currentColor());
+      for (let y=0; y<state.gridH; y++) for (let x=0; x<state.gridW; x++) {
+        const i=(y*state.gridW+x)*4, a=image[i+3]; if (a < 35) continue;
+        let rr=image[i], gg=image[i+1], bb=image[i+2];
+        const nearWhite = Math.max(rr,gg,bb)-Math.min(rr,gg,bb) < 18;
+        if (nearWhite) [rr,gg,bb] = fallback;
+        rr=Math.round(rr/32)*32; gg=Math.round(gg/32)*32; bb=Math.round(bb/32)*32;
+        const key=`rgb(${Math.min(rr,255)},${Math.min(gg,255)},${Math.min(bb,255)})`;
+        if (!groups.has(key)) groups.set(key, []); groups.get(key).push([x,y]);
+      }
+      for (const [color, dots] of groups) {
+        ctx.beginPath();
+        for (const [x,y] of dots) { ctx.moveTo((x+.5)*p+r,(y+.5)*p); ctx.arc((x+.5)*p,(y+.5)*p,r,0,Math.PI*2); }
+        ctx.fillStyle=color;
+        if ($("glow").checked) { ctx.shadowColor=color; ctx.shadowBlur=p*.9; }
+        ctx.fill(); ctx.shadowBlur=0;
+      }
+    }
+    function render(timestamp) {
+      if (!state.running) return;
+      if (!state.lastTime) state.lastTime=timestamp;
+      const dt=Math.min(.06,(timestamp-state.lastTime)/1000); state.lastTime=timestamp;
+      if (!state.paused) state.offset += Number($("speed").value) / Math.max(1, Number($("dotSize").value)) * dt;
+      const left = $("direction").value === "left";
+      const x = left ? state.gridW-state.offset : -state.width+state.offset;
+      if ((left && x+state.width < 0) || (!left && x > state.gridW)) nextMessage();
+      lowCtx.clearRect(0,0,state.gridW,state.gridH);
+      lowCtx.font=fontSpec(); lowCtx.textBaseline="middle"; lowCtx.textAlign="left";
+      lowCtx.fillStyle=currentColor();
+      lowCtx.fillText(state.messages[state.messageIndex] || "", x, state.gridH/2 + state.gridH*.02);
+      drawDots(); requestAnimationFrame(render);
+    }
+    async function enterFullscreen() {
+      const target = display;
+      try {
+        if (!document.fullscreenElement && target.requestFullscreen) await target.requestFullscreen();
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(()=>{});
+      } catch (_) { showToast("Browser-Vollbild nicht verfügbar – der Anzeigemodus ist trotzdem aktiv."); }
+    }
+    function startDisplay() {
+      state.messages=getMessages();
+      if (!state.messages.length) { showToast("Bitte mindestens einen Text eingeben."); $("messages").focus(); return; }
+      save(); editor.hidden=true; display.hidden=false; state.running=true; state.paused=false; state.messageIndex=0; state.lastTime=0;
+      $("pauseButton").textContent="Ⅱ"; resizeCanvas(); resetMessage(); enterFullscreen(); requestAnimationFrame(render); showControls();
+    }
+    function stopDisplay() {
+      state.running=false; display.hidden=true; editor.hidden=false;
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+    }
+    function togglePause() { state.paused=!state.paused; $("pauseButton").textContent=state.paused ? "▶" : "Ⅱ"; showToast(state.paused ? "Pausiert" : "Weiter"); }
+    function showControls() { controls.classList.add("visible"); clearTimeout(state.hideTimer); state.hideTimer=setTimeout(()=>controls.classList.remove("visible"),2800); }
+
+    $("startButton").addEventListener("click", startDisplay);
+    $("pauseButton").addEventListener("click", e=>{ e.stopPropagation(); togglePause(); showControls(); });
+    $("editButton").addEventListener("click", e=>{ e.stopPropagation(); stopDisplay(); });
+    $("fullscreenButton").addEventListener("click", e=>{ e.stopPropagation(); enterFullscreen(); showControls(); });
+    display.addEventListener("click", showControls);
+    window.addEventListener("resize", ()=>{ if (state.running) resizeCanvas(); });
+    document.addEventListener("keydown", e=>{
+      if (!state.running) { if ((e.metaKey||e.ctrlKey) && e.key==="Enter") startDisplay(); return; }
+      if (e.code==="Space") { e.preventDefault(); togglePause(); }
+      else if (e.key.toLowerCase()==="e" || e.key==="Escape") stopDisplay();
+      else if (e.key.toLowerCase()==="f") enterFullscreen();
+      else if (e.key==="ArrowRight") { $("speed").value=Math.min(240,Number($("speed").value)+10); updateOutputs(); }
+      else if (e.key==="ArrowLeft") { $("speed").value=Math.max(15,Number($("speed").value)-10); updateOutputs(); }
+    });
+    fields.forEach(id=>$(id).addEventListener("input",()=>{ updateOutputs(); save(); }));
+    document.querySelectorAll("[data-symbol]").forEach(btn=>btn.addEventListener("click",()=>insertSymbol(btn.dataset.symbol)));
+    $("fileInput").addEventListener("change",e=>readFile(e.target.files[0]));
+    const zone=$("fileZone");
+    ["dragenter","dragover"].forEach(type=>zone.addEventListener(type,e=>{e.preventDefault();zone.classList.add("drag");}));
+    ["dragleave","drop"].forEach(type=>zone.addEventListener(type,e=>{e.preventDefault();zone.classList.remove("drag");}));
+    zone.addEventListener("drop",e=>readFile(e.dataTransfer.files[0]));
+    load(); updateOutputs();
+  })();
+  </script>
+</body>
+</html>
+
