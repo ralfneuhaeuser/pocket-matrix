@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#050505">
+  <title>DJ Event LED Matrix</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #f4f1e8;
+      --muted: #9e9b91;
+      --line: #34342f;
+      --panel: #11120f;
+      --panel-2: #191a16;
+      --accent: #ffb000;
+      --accent-ink: #241500;
+    }
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; background: #050505; }
+    body {
+      color: var(--ink);
+      font: 16px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overscroll-behavior: none;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+      outline: 3px solid #ffd36a;
+      outline-offset: 2px;
+    }
+    .editor {
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: max(22px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(28px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+      background:
+        radial-gradient(circle at 10% 0%, rgba(255,176,0,.13), transparent 36rem),
+        #090a08;
+    }
+    .editor-inner { width: min(920px, 100%); margin: 0 auto; }
+    .topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .language-wrap { flex: 0 0 auto; }
+    .language-select { min-width: 118px; min-height: 42px; border-color: #4a493f; background: #171812; }
+    .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: .78rem; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(2rem, 8vw, 4.4rem); line-height: .98; letter-spacing: -.055em; }
+    .intro { max-width: 680px; margin: 14px 0 24px; color: #b8b5aa; font-size: clamp(1rem, 2.8vw, 1.16rem); }
+    .card { border: 1px solid var(--line); border-radius: 20px; background: rgba(17,18,15,.92); box-shadow: 0 22px 70px rgba(0,0,0,.3); overflow: hidden; }
+    .section { padding: 18px; border-bottom: 1px solid var(--line); }
+    .section:last-child { border-bottom: 0; }
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; margin-bottom: 10px; }
+    .section-title { margin: 0; font-size: .9rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+    .hint, .tiny { color: var(--muted); font-size: .82rem; }
+    textarea {
+      width: 100%; min-height: 148px; resize: vertical; padding: 14px 15px;
+      border: 1px solid #44443e; border-radius: 12px; color: #fff; background: #070806;
+      line-height: 1.45;
+    }
+    .icon-row { display: flex; gap: 7px; padding: 10px 0 2px; overflow-x: auto; scrollbar-width: thin; }
+    .icon-button {
+      flex: 0 0 auto; min-width: 44px; height: 42px; padding: 0 10px;
+      border: 1px solid #3d3d37; border-radius: 10px; color: #fff; background: var(--panel-2); font-size: 1.15rem;
+    }
+    .icon-button:hover { border-color: var(--accent); background: #252319; }
+    .file-zone {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px;
+      border: 1px dashed #55554e; border-radius: 13px; background: #0b0c09;
+      transition: border-color .2s, background .2s;
+    }
+    .file-zone.drag { border-color: var(--accent); background: #201b0e; }
+    .file-zone strong { display: block; }
+    .file-zone input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    .button, .select-like {
+      min-height: 44px; border: 1px solid #44443e; border-radius: 11px; padding: 10px 14px; color: var(--ink); background: #20211d;
+    }
+    .button:hover { border-color: #6a695f; background: #292a25; }
+    .button.primary { border-color: var(--accent); color: var(--accent-ink); background: var(--accent); font-weight: 900; }
+    .button.primary:hover { filter: brightness(1.09); }
+    .settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 15px 18px; }
+    .setting { display: grid; gap: 7px; }
+    .setting label { display: flex; justify-content: space-between; gap: 10px; color: #d5d2c8; font-size: .88rem; font-weight: 700; }
+    input[type="range"] { width: 100%; accent-color: var(--accent); }
+    input[type="color"] { width: 100%; height: 44px; padding: 4px; border: 1px solid #44443e; border-radius: 11px; background: #20211d; }
+    select { width: 100%; }
+    .switch-row { display: flex; flex-wrap: wrap; gap: 12px 18px; margin-top: 16px; }
+    .mode-note { margin-top: 12px; padding: 10px 12px; border-radius: 10px; color: #b8b5aa; background: #0b0c09; font-size: .82rem; }
+    .check { display: flex; align-items: center; gap: 8px; color: #cbc8be; font-size: .9rem; }
+    .check input { width: 19px; height: 19px; accent-color: var(--accent); }
+    .actions { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+    .actions .button.primary { min-width: min(260px, 62vw); }
+    .privacy { max-width: 440px; margin: 12px 0 0; color: #74746d; font-size: .75rem; }
+    .version { float: right; color: #5f5f59; }
+    .help {
+      margin: 0 0 16px; border: 1px solid var(--line); border-radius: 15px;
+      background: rgba(17,18,15,.78); overflow: hidden;
+    }
+    .help summary {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      min-height: 52px; padding: 13px 16px; color: #dedbd0; font-weight: 800;
+      cursor: pointer; list-style: none;
+    }
+    .help summary::-webkit-details-marker { display: none; }
+    .help summary::after { content: "+"; color: var(--accent); font-size: 1.35rem; line-height: 1; }
+    .help[open] summary::after { content: "−"; }
+    .help summary:hover { background: rgba(255,176,0,.06); }
+    .help-content { padding: 0 16px 16px; border-top: 1px solid var(--line); color: #b8b5aa; font-size: .9rem; }
+    .help-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px 22px; padding-top: 15px; }
+    .help h2 { margin: 0 0 6px; color: var(--ink); font-size: .92rem; }
+    .help p { margin: 0; }
+    .help p + p { margin-top: 7px; }
+    .help ol { margin: 6px 0 0; padding-left: 1.25rem; }
+    .help li + li { margin-top: 4px; }
+    .help code { color: #ffd36a; font: .86em ui-monospace, SFMono-Regular, Consolas, monospace; }
+
+    .display { position: fixed; inset: 0; z-index: 10; background: #000; touch-action: manipulation; }
+    .display[hidden], .editor[hidden] { display: none; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .display-controls {
+      position: absolute; z-index: 2; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right));
+      display: flex; align-items: center; gap: 8px; padding: 7px;
+      border: 1px solid rgba(255,255,255,.14); border-radius: 14px; background: rgba(15,15,13,.8); backdrop-filter: blur(12px);
+      opacity: .1; transition: opacity .2s;
+    }
+    .display:hover .display-controls, .display-controls:focus-within, .display-controls.visible { opacity: 1; }
+    .round-button { width: 44px; height: 44px; border: 0; border-radius: 10px; color: #fff; background: rgba(255,255,255,.1); font-size: 1.1rem; }
+    .round-button:hover { background: rgba(255,255,255,.2); }
+    .counter {
+      position: absolute; left: max(14px, env(safe-area-inset-left)); bottom: max(12px, env(safe-area-inset-bottom));
+      padding: 5px 9px; border-radius: 99px; color: rgba(255,255,255,.58); background: rgba(0,0,0,.35); font-size: .72rem;
+      opacity: 0; transition: opacity .2s;
+    }
+    .wake-badge {
+      display: grid; place-items: center; width: 32px; height: 32px; border-radius: 9px;
+      color: #999; background: rgba(255,255,255,.07); font-size: .92rem;
+    }
+    .wake-badge.active { color: #7dff9d; background: rgba(52,199,89,.14); }
+    .wake-badge.unavailable { color: #ffca63; background: rgba(255,176,0,.13); }
+    .display-controls.visible ~ .counter { opacity: 1; }
+    .toast {
+      position: fixed; z-index: 50; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translate(-50%, 18px);
+      max-width: calc(100vw - 32px); padding: 10px 14px; border-radius: 10px; color: #17120a; background: #ffd36a;
+      font-size: .86rem; font-weight: 800; opacity: 0; pointer-events: none; transition: .2s;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 640px) {
+      .topline { align-items: center; }
+      .language-select { min-width: 104px; }
+      .settings-grid { grid-template-columns: 1fr; }
+      .help-grid { grid-template-columns: 1fr; }
+      .section { padding: 15px; }
+      .section-head { align-items: flex-start; flex-direction: column; gap: 3px; }
+      .file-zone { align-items: flex-start; flex-direction: column; }
+      .actions { align-items: stretch; flex-direction: column-reverse; }
+      .actions .button.primary { width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { .display-controls, .toast { transition: none; } }
+  </style>
+</head>
+<body>
+  <section class="editor" id="editor">
+    <div class="editor-inner">
+      <div class="topline">
+        <p class="eyebrow" id="eyebrow">Offline · eine Datei · Punktmatrix</p>
+        <div class="language-wrap">
+          <select id="language" class="select-like language-select" aria-label="Sprache">
+            <option value="de">DE · Deutsch</option>
+            <option value="en">EN · English</option>
+          </select>
+        </div>
+      </div>
+      <h1>DJ Event LED Matrix</h1>
+      <p class="intro" id="intro">Lauftexte für DJ-Sets, Events und mobile Displays. Programm eintragen, Anzeige einstellen und Display starten.</p>
+
+      <details class="help">
+        <summary id="helpSummary">Hilfe &amp; Bedienung</summary>
+        <div class="help-content">
+          <div class="help-grid">
+            <div>
+              <h2 id="helpQuickTitle">Schnellstart</h2>
+              <ol id="helpQuickBody">
+                <li>Pro Nachricht eine Zeile eingeben.</li>
+                <li>Animation und LED-Optik wählen.</li>
+                <li>„Display starten“ antippen.</li>
+              </ol>
+            </div>
+            <div>
+              <h2 id="helpTextTitle">Texte &amp; Symbole</h2>
+              <p id="helpTextBody">Leere Zeilen werden übersprungen. Ein Symbolknopf fügt das Zeichen an der Cursorposition ein. Kürzel wie <code>:vinyl:</code> funktionieren ebenfalls. Du kannst auch über die Emoji-Tastatur beliebige Emojis direkt eingeben. Eine geladene TXT-Datei ersetzt den Inhalt des Textfelds.</p>
+            </div>
+            <div>
+              <h2 id="helpModesTitle">Animationsmodi</h2>
+              <p id="helpModesBody"><b>Smart</b> zeigt kurze Zeilen ruhig an. Lange Zeilen laufen erst vollständig horizontal; danach folgt der vertikale Wechsel. <b>Horizontal</b> lässt jede Nachricht als klassisches Laufband durchs Bild ziehen.</p>
+            </div>
+            <div>
+              <h2 id="helpControlsTitle">Anzeige bedienen</h2>
+              <p id="helpControlsBody">Im Display blendet Antippen die drei Bedienknöpfe ein: <b>Ⅱ/▶</b> pausiert oder setzt fort, <b>⛶</b> startet den Vollbildmodus und <b>⚙</b> führt zurück zu den Einstellungen. Am Computer funktionieren außerdem Leertaste, F und E.</p>
+            </div>
+            <div>
+              <h2 id="helpAppearanceTitle">LED-Optik</h2>
+              <p id="helpAppearanceBody">Schrift und LED-Größe bestimmen, wie viel Text gleichzeitig sichtbar ist. „LED-Glow“ erzeugt den Leuchteffekt; „Punktraster zeigen“ macht auch die inaktiven LEDs sichtbar.</p>
+            </div>
+            <div>
+              <h2 id="helpWakeTitle">Bildschirm aktiv halten</h2>
+              <p id="helpWakeBody">Beim Start versucht die App, den Bildschirm wach zu halten. Das Sonnensymbol zeigt den Status. Browser und Betriebssystem können dies ablehnen; stelle dann das Display-Timeout manuell aus und nutze wegen des Stromverbrauchs möglichst eine Stromversorgung.</p>
+            </div>
+            <div>
+              <h2 id="helpDisplaysTitle">Displaygröße &amp; Ausrichtung</h2>
+              <p id="helpDisplaysBody"><b>Querformat wird empfohlen</b>, weil mehr Text sichtbar bleibt. Auf großen Smartphones helfen kleine LEDs und eine kondensierte Schrift. Tablets sind der ideale Formfaktor; bei Notebook-Displays können LEDs und Schrift größer gewählt werden. Smart verhindert, dass lange Zeilen abgeschnitten werden.</p>
+            </div>
+            <div>
+              <h2 id="helpFullscreenTitle">Vollbild auf Android &amp; Apple</h2>
+              <p id="helpFullscreenBody">Die App versucht Vollbild automatisch. Falls die Browserleiste bleibt: Unter Android in Chrome erneut <b>⛶</b> antippen oder die Seite zum Startbildschirm hinzufügen. Auf iPhone/iPad in Safari über „Teilen → Zum Home-Bildschirm“ als Web-App öffnen; lokale Dateivorschauen können JavaScript einschränken. Am Notebook hilft zusätzlich der Vollbildmodus des Browsers.</p>
+            </div>
+            <div>
+              <h2 id="helpOfflineTitle">Offline &amp; Datenschutz</h2>
+              <p id="helpOfflineBody">Texte und Einstellungen bleiben auf diesem Gerät. Die App lädt nichts hoch. Lokale TXT-Dateien werden erst gelesen, nachdem du sie bewusst ausgewählt hast.</p>
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <div class="card">
+        <div class="section">
+          <div class="section-head">
+            <h2 class="section-title" id="textSectionTitle">1 · Texte eingeben</h2>
+            <span class="hint" id="textSectionHint">Eine Zeile = eine Anzeige</span>
+          </div>
+          <textarea id="messages" aria-label="Lauftexte" spellcheck="true">Willkommen!
+Programm und Hinweise
+Hallo Welt!</textarea>
+          <div class="icon-row" id="iconRow" aria-label="DJ- und Event-Symbole einfügen">
+            <button class="icon-button" data-symbol="💿" title=":vinyl:">💿</button>
+            <button class="icon-button" data-symbol="🎧" title=":kopfhoerer: / :headphones:">🎧</button>
+            <button class="icon-button" data-symbol="🎚️" title=":equalizer:">🎚️</button>
+            <button class="icon-button" data-symbol="🔊" title=":lautsprecher: / :speaker:">🔊</button>
+            <button class="icon-button" data-symbol="🎵" title=":musik: / :music:">🎵</button>
+            <button class="icon-button" data-symbol="🎤" title=":mikrofon: / :mic:">🎤</button>
+            <button class="icon-button" data-symbol="🪩" title=":disco:">🪩</button>
+            <button class="icon-button" data-symbol="🚲" title=":fahrrad: / :bike:">🚲</button>
+            <button class="icon-button" data-symbol="🕒" title=":uhr: / :clock:">🕒</button>
+            <button class="icon-button" data-symbol="❤️" title=":herz: / :heart:">❤️</button>
+            <button class="icon-button" data-symbol="⚡" title=":blitz:">⚡</button>
+            <button class="icon-button" data-symbol="@" title=":at:">@</button>
+            <button class="icon-button" data-symbol="#" title=":hashtag:">#</button>
+          </div>
+          <div class="tiny" id="iconHint">Symbol antippen, Emoji-Tastatur nutzen oder Kürzel eingeben: <b>:vinyl:</b> <b>:headphones:</b> <b>:music:</b> <b>:heart:</b></div>
+        </div>
+
+        <div class="section">
+          <div class="section-head">
+            <h2 class="section-title" id="fileSectionTitle">2 · Texte aus Datei (optional)</h2>
+            <span class="hint" id="fileStatus" data-empty="true">Keine Datei gewählt</span>
+          </div>
+          <div class="file-zone" id="fileZone">
+            <div><strong id="fileLoadTitle">TXT-Datei laden</strong><span class="tiny" id="fileLoadHint">Ersetzt das Textfeld · UTF-8 · eine Zeile je Anzeige</span></div>
+            <label class="button" for="fileInput" id="fileChoose">TXT wählen</label>
+            <input id="fileInput" type="file" accept=".txt,text/plain">
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="section-head"><h2 class="section-title" id="settingsSectionTitle">3 · Anzeige einstellen</h2><span class="hint" id="settingsSectionHint">Wird auf diesem Gerät gespeichert</span></div>
+          <div class="settings-grid">
+            <div class="setting">
+              <label for="animationMode"><span id="animationLabel">Animation</span></label>
+              <select id="animationMode" class="select-like">
+                <option value="smart" id="animationSmart" selected>Smart · Lauf + Zeilenwechsel</option>
+                <option value="horizontal" id="animationHorizontal">Laufband · nur horizontal</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label for="fontStyle"><span id="fontLabel">Schrift</span></label>
+              <select id="fontStyle" class="select-like">
+                <option value="standard" id="fontStandard" selected>Standard · kräftig</option>
+                <option value="bold" id="fontBold">Extra fett</option>
+                <option value="narrow" id="fontNarrow">Schmal</option>
+                <option value="condensed" id="fontCondensed">Stark kondensiert</option>
+                <option value="wide" id="fontWide">Weit</option>
+                <option value="italic" id="fontItalic">Kursiv</option>
+              </select>
+            </div>
+            <div class="setting">
+              <label for="speed"><span id="speedLabel">Laufgeschwindigkeit</span><output id="speedOut">200 px/s</output></label>
+              <input id="speed" type="range" min="30" max="600" step="10" value="200">
+            </div>
+            <div class="setting">
+              <label for="transitionSpeed"><span id="transitionLabel">Vertikaler Wechsel</span><output id="transitionOut">420 ms</output></label>
+              <input id="transitionSpeed" type="range" min="180" max="1200" step="20" value="420">
+            </div>
+            <div class="setting">
+              <label for="dotSize"><span id="dotLabel">LED-Größe</span><output id="dotOut">8 px</output></label>
+              <input id="dotSize" type="range" min="5" max="16" step="1" value="8">
+            </div>
+            <div class="setting">
+              <label for="direction"><span id="directionLabel">Laufrichtung</span></label>
+              <select id="direction" class="select-like"><option value="left" id="directionLeft">← nach links</option><option value="right" id="directionRight">nach rechts →</option></select>
+            </div>
+            <div class="setting">
+              <label for="textColor"><span id="colorLabel">LED-Farbe</span></label>
+              <input id="textColor" type="color" value="#ffb000">
+            </div>
+          </div>
+          <div class="mode-note" id="modeNote">Smart passt sich automatisch an: kurze Zeilen stehen, lange laufen vollständig durch; anschließend folgt der Zeilenwechsel.</div>
+          <div class="switch-row">
+            <label class="check"><input id="glow" type="checkbox" checked> <span id="glowLabel">LED-Glow</span></label>
+            <label class="check"><input id="inactive" type="checkbox" checked> <span id="inactiveLabel">Punktraster zeigen</span></label>
+            <label class="check"><input id="randomColors" type="checkbox"> <span id="randomLabel">Farben wechseln</span></label>
+            <label class="check"><input id="keepAwake" type="checkbox" checked> <span id="awakeLabel">Bildschirm aktiv halten</span></label>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="actions">
+            <span class="tiny" id="startHint">Im Display antippen: Bedienung einblenden</span>
+            <button class="button primary" id="startButton">Display starten ↗</button>
+          </div>
+        </div>
+      </div>
+      <p class="privacy"><span id="privacyText">Alles bleibt lokal auf diesem Gerät. Keine Anmeldung, kein Upload, keine Internetverbindung nötig.</span><span class="version">v0.3</span></p>
+    </div>
+  </section>
+
+  <section class="display" id="display" hidden aria-label="DJ Event LED Matrix">
+    <canvas id="canvas"></canvas>
+    <div class="display-controls" id="displayControls">
+      <button class="round-button" id="pauseButton" title="Pause / Weiter" aria-label="Pause oder Weiter">Ⅱ</button>
+      <span class="wake-badge" id="wakeBadge" title="Bildschirm-Wachhalten wird geprüft" aria-label="Bildschirm-Wachhalten wird geprüft">☀</span>
+      <button class="round-button" id="fullscreenButton" title="Vollbild" aria-label="Vollbild">⛶</button>
+      <button class="round-button" id="editButton" title="Einstellungen" aria-label="Einstellungen">⚙</button>
+    </div>
+    <div class="counter" id="counter">1 / 1</div>
+  </section>
+  <div class="toast" id="toast" role="status"></div>
+
+  <script>
+  (() => {
+    "use strict";
+    const $ = (id) => document.getElementById(id);
+    const editor = $("editor"), display = $("display"), canvas = $("canvas");
+    const ctx = canvas.getContext("2d", { alpha: false });
+    const low = document.createElement("canvas"), lowCtx = low.getContext("2d", { willReadFrequently: true });
+    const controls = $("displayControls"), toast = $("toast"), wakeBadge = $("wakeBadge");
+    const fields = ["messages","animationMode","fontStyle","speed","transitionSpeed","dotSize","direction","textColor","glow","inactive","randomColors","keepAwake","language"];
+    const shortcuts = {
+      ":vinyl:": "💿", ":kopfhoerer:": "🎧", ":headphones:": "🎧", ":equalizer:": "🎚️",
+      ":lautsprecher:": "🔊", ":speaker:": "🔊", ":musik:": "🎵", ":music:": "🎵",
+      ":mikrofon:": "🎤", ":mic:": "🎤", ":disco:": "🪩", ":fahrrad:": "🚲", ":bike:": "🚲",
+      ":uhr:": "🕒", ":clock:": "🕒", ":herz:": "❤️", ":heart:": "❤️", ":blitz:": "⚡",
+      ":flash:": "⚡", ":ort:": "📍", ":location:": "📍", ":at:": "@", ":hashtag:": "#",
+      ":smile:": "😊", ":radio:": "📻", ":warnung:": "⚠️", ":sonne:": "☀️"
+    };
+    const translations = {
+      de: {
+        eyebrow: "Offline · eine Datei · Punktmatrix",
+        intro: "Lauftexte für DJ-Sets, Events und mobile Displays. Programm eintragen, Anzeige einstellen und Display starten.",
+        helpSummary: "Hilfe & Bedienung", helpQuickTitle: "Schnellstart",
+        helpQuickBody: "<li>Pro Nachricht eine Zeile eingeben.</li><li>Animation und LED-Optik wählen.</li><li>„Display starten“ antippen.</li>",
+        helpTextTitle: "Texte & Symbole", helpTextBody: "Leere Zeilen werden übersprungen. Ein Symbolknopf fügt das Zeichen an der Cursorposition ein. Kürzel wie <code>:vinyl:</code> funktionieren ebenfalls. Du kannst auch über die Emoji-Tastatur beliebige Emojis direkt eingeben. Eine geladene TXT-Datei ersetzt den Inhalt des Textfelds.",
+        helpModesTitle: "Animationsmodi", helpModesBody: "<b>Smart</b> zeigt kurze Zeilen ruhig an. Lange Zeilen laufen erst vollständig horizontal; danach folgt der vertikale Wechsel. <b>Horizontal</b> lässt jede Nachricht als klassisches Laufband durchs Bild ziehen.",
+        helpControlsTitle: "Anzeige bedienen", helpControlsBody: "Im Display blendet Antippen die drei Bedienknöpfe ein: <b>Ⅱ/▶</b> pausiert oder setzt fort, <b>⛶</b> startet den Vollbildmodus und <b>⚙</b> führt zurück zu den Einstellungen. Am Computer funktionieren außerdem Leertaste, F und E.",
+        helpAppearanceTitle: "LED-Optik", helpAppearanceBody: "Schrift und LED-Größe bestimmen, wie viel Text gleichzeitig sichtbar ist. „LED-Glow“ erzeugt den Leuchteffekt; „Punktraster zeigen“ macht auch die inaktiven LEDs sichtbar.",
+        helpWakeTitle: "Bildschirm aktiv halten", helpWakeBody: "Beim Start versucht die App, den Bildschirm wach zu halten. Das Sonnensymbol zeigt den Status. Browser und Betriebssystem können dies ablehnen; stelle dann das Display-Timeout manuell aus und nutze wegen des Stromverbrauchs möglichst eine Stromversorgung.",
+        helpDisplaysTitle: "Displaygröße & Ausrichtung", helpDisplaysBody: "<b>Querformat wird empfohlen</b>, weil mehr Text sichtbar bleibt. Auf großen Smartphones helfen kleine LEDs und eine kondensierte Schrift. Tablets sind der ideale Formfaktor; bei Notebook-Displays können LEDs und Schrift größer gewählt werden. Smart verhindert, dass lange Zeilen abgeschnitten werden.",
+        helpFullscreenTitle: "Vollbild auf Android & Apple", helpFullscreenBody: "Die App versucht Vollbild automatisch. Falls die Browserleiste bleibt: Unter Android in Chrome erneut <b>⛶</b> antippen oder die Seite zum Startbildschirm hinzufügen. Auf iPhone/iPad in Safari über „Teilen → Zum Home-Bildschirm“ als Web-App öffnen; lokale Dateivorschauen können JavaScript einschränken. Am Notebook hilft zusätzlich der Vollbildmodus des Browsers.",
+        helpOfflineTitle: "Offline & Datenschutz", helpOfflineBody: "Texte und Einstellungen bleiben auf diesem Gerät. Die App lädt nichts hoch. Lokale TXT-Dateien werden erst gelesen, nachdem du sie bewusst ausgewählt hast.",
+        textSectionTitle: "1 · Texte eingeben", textSectionHint: "Eine Zeile = eine Anzeige",
+        iconHint: "Symbol antippen, Emoji-Tastatur nutzen oder Kürzel eingeben: <b>:vinyl:</b> <b>:headphones:</b> <b>:music:</b> <b>:heart:</b>",
+        fileSectionTitle: "2 · Texte aus Datei (optional)", fileEmpty: "Keine Datei gewählt", fileLoadTitle: "TXT-Datei laden", fileLoadHint: "Ersetzt das Textfeld · UTF-8 · eine Zeile je Anzeige", fileChoose: "TXT wählen",
+        settingsSectionTitle: "3 · Anzeige einstellen", settingsSectionHint: "Wird auf diesem Gerät gespeichert",
+        animationLabel: "Animation", animationSmart: "Smart · Lauf + Zeilenwechsel", animationHorizontal: "Laufband · nur horizontal",
+        fontLabel: "Schrift", fontStandard: "Standard · kräftig", fontBold: "Extra fett", fontNarrow: "Schmal", fontCondensed: "Stark kondensiert", fontWide: "Weit", fontItalic: "Kursiv",
+        speedLabel: "Laufgeschwindigkeit", transitionLabel: "Vertikaler Wechsel", dotLabel: "LED-Größe", directionLabel: "Laufrichtung", directionLeft: "← nach links", directionRight: "nach rechts →", colorLabel: "LED-Farbe",
+        modeNote: "Smart passt sich automatisch an: kurze Zeilen stehen, lange laufen vollständig durch; anschließend folgt der Zeilenwechsel.",
+        glowLabel: "LED-Glow", inactiveLabel: "Punktraster zeigen", randomLabel: "Farben wechseln", awakeLabel: "Bildschirm aktiv halten",
+        startHint: "Im Display antippen: Bedienung einblenden", startButton: "Display starten ↗",
+        privacyText: "Alles bleibt lokal auf diesem Gerät. Keine Anmeldung, kein Upload, keine Internetverbindung nötig.",
+        iconRowAria: "DJ- und Event-Symbole einfügen", messagesAria: "Lauftexte", languageAria: "Sprache",
+        pauseTitle: "Pause / Weiter", pauseAria: "Pause oder Weiter", fullscreenTitle: "Vollbild", editTitle: "Einstellungen",
+        wakeChecking: "Bildschirm-Wachhalten wird geprüft", wakeActive: "Bildschirm bleibt aktiv", wakeUnavailable: "Wachhalten nicht verfügbar",
+        needText: "Bitte mindestens einen Text eingeben.", fileChooseError: "Bitte eine TXT-Datei wählen.", fileReadError: "Die Datei konnte nicht gelesen werden.", fileLoaded: "TXT-Datei geladen", messageOne: "Nachricht", messageMany: "Nachrichten",
+        fullscreenUnavailable: "Browser-Vollbild nicht verfügbar – der Anzeigemodus ist trotzdem aktiv.", paused: "Pausiert", resumed: "Weiter", wakeDenied: "Wachhalten nicht verfügbar – Display-Timeout bitte manuell ausschalten.", wakeOn: "Bildschirm bleibt aktiv"
+      },
+      en: {
+        eyebrow: "Offline · one file · dot matrix",
+        intro: "Scrolling messages for DJ sets, events and mobile displays. Enter the programme, adjust the display and start.",
+        helpSummary: "Help & controls", helpQuickTitle: "Quick start",
+        helpQuickBody: "<li>Enter one message per line.</li><li>Choose animation and LED appearance.</li><li>Tap “Start display”.</li>",
+        helpTextTitle: "Text & symbols", helpTextBody: "Empty lines are skipped. A symbol button inserts its character at the cursor. Shortcodes such as <code>:vinyl:</code> work too. You can also enter any emoji directly from your device’s emoji keyboard. Loading a TXT file replaces the text box contents.",
+        helpModesTitle: "Animation modes", helpModesBody: "<b>Smart</b> holds short lines still. Long lines first scroll completely across the screen, followed by a vertical transition. <b>Marquee</b> moves every message horizontally across the display.",
+        helpControlsTitle: "Display controls", helpControlsBody: "Tap the display to reveal three controls: <b>Ⅱ/▶</b> pauses or resumes, <b>⛶</b> requests full screen and <b>⚙</b> returns to settings. On a computer you can also use Space, F and E.",
+        helpAppearanceTitle: "LED appearance", helpAppearanceBody: "Font and LED size determine how much text fits on screen. “LED glow” adds the light effect; “Show dot grid” also displays inactive LEDs.",
+        helpWakeTitle: "Keep the screen awake", helpWakeBody: "When the display starts, the app tries to keep the screen awake. The sun icon shows its status. The browser or operating system may deny this; in that case disable the screen timeout manually and use external power where possible.",
+        helpDisplaysTitle: "Screen size & orientation", helpDisplaysBody: "<b>Landscape is recommended</b> because it leaves more room for text. On large phones, use smaller LEDs and a condensed font. Tablets are the ideal form factor; laptop displays can use larger LEDs and type. Smart mode prevents long lines from being cut off.",
+        helpFullscreenTitle: "Full screen on Android & Apple", helpFullscreenBody: "The app requests full screen automatically. If browser controls remain: on Android in Chrome, tap <b>⛶</b> again or add the page to the Home screen. On iPhone/iPad in Safari, use “Share → Add to Home Screen” and open it as a web app; local file previews may restrict JavaScript. On a laptop, the browser’s own full-screen command is another fallback.",
+        helpOfflineTitle: "Offline & privacy", helpOfflineBody: "Text and settings stay on this device. The app uploads nothing. Local TXT files are read only after you select them.",
+        textSectionTitle: "1 · Enter messages", textSectionHint: "One line = one display message",
+        iconHint: "Tap a symbol, use the emoji keyboard or enter a shortcode: <b>:vinyl:</b> <b>:headphones:</b> <b>:music:</b> <b>:heart:</b>",
+        fileSectionTitle: "2 · Load text file (optional)", fileEmpty: "No file selected", fileLoadTitle: "Load TXT file", fileLoadHint: "Replaces the text box · UTF-8 · one message per line", fileChoose: "Choose TXT",
+        settingsSectionTitle: "3 · Display settings", settingsSectionHint: "Saved on this device",
+        animationLabel: "Animation", animationSmart: "Smart · scroll + line change", animationHorizontal: "Marquee · horizontal only",
+        fontLabel: "Font", fontStandard: "Standard · strong", fontBold: "Extra bold", fontNarrow: "Narrow", fontCondensed: "Condensed", fontWide: "Wide", fontItalic: "Italic",
+        speedLabel: "Scroll speed", transitionLabel: "Vertical transition", dotLabel: "LED size", directionLabel: "Scroll direction", directionLeft: "← to the left", directionRight: "to the right →", colorLabel: "LED colour",
+        modeNote: "Smart adapts automatically: short lines stay still, long lines scroll completely, then the next line moves in vertically.",
+        glowLabel: "LED glow", inactiveLabel: "Show dot grid", randomLabel: "Cycle colours", awakeLabel: "Keep screen awake",
+        startHint: "Tap the display to reveal controls", startButton: "Start display ↗",
+        privacyText: "Everything stays on this device. No account, upload or internet connection required.",
+        iconRowAria: "Insert DJ and event symbols", messagesAria: "Scrolling messages", languageAria: "Language",
+        pauseTitle: "Pause / resume", pauseAria: "Pause or resume", fullscreenTitle: "Full screen", editTitle: "Settings",
+        wakeChecking: "Checking screen wake lock", wakeActive: "Screen stays awake", wakeUnavailable: "Wake lock unavailable",
+        needText: "Please enter at least one message.", fileChooseError: "Please choose a TXT file.", fileReadError: "The file could not be read.", fileLoaded: "TXT file loaded", messageOne: "message", messageMany: "messages",
+        fullscreenUnavailable: "Browser full screen is unavailable – display mode is still active.", paused: "Paused", resumed: "Resumed", wakeDenied: "Wake lock unavailable – please disable the screen timeout manually.", wakeOn: "Screen stays awake"
+      }
+    };
+    const palette = ["#ffb000", "#ff3b30", "#34c759", "#00d8ff", "#bf5af2", "#ff7eb6"];
+    const previousDefaultMessages = "";
+    const state = {
+      running: false, paused: false, messageIndex: 0, offset: 0, lastTime: 0,
+      width: 0, gridW: 0, gridH: 0, pitch: 8, messages: [], hideTimer: 0,
+      phase: "holdStart", phaseTime: 0, smartX: 0, smartEndX: 0, smartOverflow: false,
+      wakeLock: null, language: "de"
+    };
+
+    const htmlIds = new Set(["helpQuickBody","helpTextBody","helpModesBody","helpControlsBody","helpAppearanceBody","helpWakeBody","helpDisplaysBody","helpFullscreenBody","helpOfflineBody","iconHint"]);
+    const translatedIds = ["eyebrow","intro","helpSummary","helpQuickTitle","helpQuickBody","helpTextTitle","helpTextBody","helpModesTitle","helpModesBody","helpControlsTitle","helpControlsBody","helpAppearanceTitle","helpAppearanceBody","helpWakeTitle","helpWakeBody","helpDisplaysTitle","helpDisplaysBody","helpFullscreenTitle","helpFullscreenBody","helpOfflineTitle","helpOfflineBody","textSectionTitle","textSectionHint","iconHint","fileSectionTitle","fileLoadTitle","fileLoadHint","fileChoose","settingsSectionTitle","settingsSectionHint","animationLabel","animationSmart","animationHorizontal","fontLabel","fontStandard","fontBold","fontNarrow","fontCondensed","fontWide","fontItalic","speedLabel","transitionLabel","dotLabel","directionLabel","directionLeft","directionRight","colorLabel","modeNote","glowLabel","inactiveLabel","randomLabel","awakeLabel","startHint","startButton","privacyText"];
+
+    function t(key) { return (translations[state.language] || translations.de)[key] || key; }
+    function setLanguage(language, persist = true) {
+      state.language = language === "en" ? "en" : "de";
+      document.documentElement.lang = state.language;
+      $("language").value = state.language;
+      translatedIds.forEach(id => { const el = $(id); if (!el) return; htmlIds.has(id) ? el.innerHTML = t(id) : el.textContent = t(id); });
+      $("language").setAttribute("aria-label", t("languageAria"));
+      $("messages").setAttribute("aria-label", t("messagesAria"));
+      $("iconRow").setAttribute("aria-label", t("iconRowAria"));
+      $("pauseButton").title = t("pauseTitle"); $("pauseButton").setAttribute("aria-label", t("pauseAria"));
+      $("fullscreenButton").title = t("fullscreenTitle"); $("fullscreenButton").setAttribute("aria-label", t("fullscreenTitle"));
+      $("editButton").title = t("editTitle"); $("editButton").setAttribute("aria-label", t("editTitle"));
+      if ($("fileStatus").dataset.empty === "true") $("fileStatus").textContent = t("fileEmpty");
+      else if ($("fileStatus").dataset.filename) {
+        const count = Number($("fileStatus").dataset.count || 0);
+        $("fileStatus").textContent = $("fileStatus").dataset.filename + " · " + count + " " + (count === 1 ? t("messageOne") : t("messageMany"));
+      }
+      updateWakeBadge(state.wakeLock ? "active" : $("keepAwake").checked ? "checking" : "unavailable");
+      if (persist) save();
+    }
+
+    function expandShortcuts(text) {
+      return Object.entries(shortcuts).reduce((out, [key, value]) => out.split(key).join(value), text);
+    }
+    function getMessages() {
+      return $("messages").value.split(/\r?\n/).map(s => expandShortcuts(s.trim())).filter(Boolean);
+    }
+    function save() {
+      try {
+        const data = {};
+        fields.forEach(id => { const el = $(id); data[id] = el.type === "checkbox" ? el.checked : el.value; });
+        localStorage.setItem("dj-event-led-matrix-v03", JSON.stringify(data));
+      } catch (_) {}
+    }
+    function load() {
+      try {
+        const current = localStorage.getItem("dj-event-led-matrix-v03");
+        const legacy = !current && localStorage.getItem("led-lauftext-v1");
+        const data = JSON.parse(current || legacy || "null");
+        if (!data) { setLanguage("de", false); return; }
+        if (data.messages === previousDefaultMessages) data.messages = $("messages").defaultValue.trim();
+        if (legacy && String(data.speed) === "90") data.speed = "200";
+        fields.forEach(id => { if (!(id in data)) return; const el = $(id); el.type === "checkbox" ? el.checked = !!data[id] : el.value = data[id]; });
+      } catch (_) {}
+      setLanguage($("language").value || "de", false);
+      updateOutputs();
+    }
+    function updateOutputs() {
+      $("speedOut").value = $("speed").value + " px/s";
+      $("transitionOut").value = $("transitionSpeed").value + " ms";
+      $("dotOut").value = $("dotSize").value + " px";
+    }
+    function showToast(message) {
+      toast.textContent = message; toast.classList.add("show");
+      clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.classList.remove("show"), 2200);
+    }
+    async function readFile(file) {
+      if (!file) return;
+      if (!/\.txt$/i.test(file.name) && file.type && file.type !== "text/plain") { showToast(t("fileChooseError")); return; }
+      try {
+        const text = await file.text();
+        const messages = text.replace(/^\uFEFF/, "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+        if (!messages.length) throw new Error("empty");
+        $("messages").value = messages.join("\n");
+        $("fileStatus").dataset.empty = "false";
+        $("fileStatus").dataset.filename = file.name;
+        $("fileStatus").dataset.count = String(messages.length);
+        $("fileStatus").textContent = file.name + " · " + messages.length + " " + (messages.length === 1 ? t("messageOne") : t("messageMany"));
+        save(); showToast(t("fileLoaded"));
+      } catch (_) { showToast(t("fileReadError")); }
+    }
+    function insertSymbol(symbol) {
+      const area = $("messages"), start = area.selectionStart, end = area.selectionEnd;
+      area.value = area.value.slice(0,start) + symbol + area.value.slice(end);
+      area.focus(); area.selectionStart = area.selectionEnd = start + symbol.length; save();
+    }
+    function resizeCanvas() {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = display.getBoundingClientRect();
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
+      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+      state.pitch = Math.max(4, Number($("dotSize").value) * dpr);
+      state.gridW = Math.max(1, Math.floor(canvas.width / state.pitch));
+      state.gridH = Math.max(1, Math.floor(canvas.height / state.pitch));
+      low.width = state.gridW; low.height = state.gridH;
+      state.width = measureMessage(state.messages[state.messageIndex] || "");
+      if (state.running && $("animationMode").value === "smart") resetMessage();
+    }
+    function fontPreset() {
+      const presets = {
+        standard:  { weight: 850, scaleX: 1,    italic: false, stroke: 0 },
+        bold:      { weight: 900, scaleX: 1,    italic: false, stroke: .72 },
+        narrow:    { weight: 850, scaleX: .88,  italic: false, stroke: 0 },
+        condensed: { weight: 900, scaleX: .73,  italic: false, stroke: 0 },
+        wide:      { weight: 800, scaleX: 1.18, italic: false, stroke: 0 },
+        italic:    { weight: 850, scaleX: 1,    italic: true,  stroke: 0 }
+      };
+      return presets[$("fontStyle").value] || presets.standard;
+    }
+    function fontSpec() {
+      const size = Math.max(7, Math.floor(state.gridH * .68));
+      const preset = fontPreset();
+      return `${preset.italic ? "italic " : ""}${preset.weight} ${size}px ui-sans-serif, system-ui, -apple-system, "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+    }
+    function measureMessage(text) {
+      lowCtx.font = fontSpec();
+      return Math.ceil(lowCtx.measureText(text).width * fontPreset().scaleX) + 4;
+    }
+    function resetMessage() {
+      state.offset = 0;
+      state.width = measureMessage(state.messages[state.messageIndex] || "");
+      const positions = smartPositions(state.messageIndex);
+      state.smartX = positions.start;
+      state.smartEndX = positions.end;
+      state.smartOverflow = positions.overflow;
+      state.phase = "holdStart";
+      state.phaseTime = 0;
+      $("counter").textContent = `${state.messageIndex + 1} / ${state.messages.length}`;
+    }
+    function nextMessage() {
+      state.messageIndex = (state.messageIndex + 1) % state.messages.length;
+      resetMessage();
+    }
+    function currentColor(index = state.messageIndex) {
+      return $("randomColors").checked ? palette[index % palette.length] : $("textColor").value;
+    }
+    function smartPositions(index) {
+      const width = measureMessage(state.messages[index] || "");
+      const margin = Math.max(2, Math.floor(state.gridW * .025));
+      const available = Math.max(1, state.gridW - margin * 2);
+      if (width <= available) {
+        const centered = (state.gridW - width) / 2;
+        return { start: centered, end: centered, overflow: false };
+      }
+      const left = $("direction").value === "left";
+      return left
+        ? { start: margin, end: state.gridW - width - margin, overflow: true }
+        : { start: state.gridW - width - margin, end: margin, overflow: true };
+    }
+    function readingTime(text) {
+      return Math.min(6, Math.max(2.4, Array.from(text).length * .14));
+    }
+    function easeInOut(value) {
+      return value < .5 ? 2 * value * value : 1 - Math.pow(-2 * value + 2, 2) / 2;
+    }
+    function drawText(text, x, y, colorIndex) {
+      const preset = fontPreset();
+      const color = currentColor(colorIndex);
+      lowCtx.save();
+      lowCtx.translate(x, y);
+      lowCtx.scale(preset.scaleX, 1);
+      lowCtx.font = fontSpec();
+      lowCtx.textBaseline = "middle";
+      lowCtx.textAlign = "left";
+      lowCtx.fillStyle = color;
+      lowCtx.fillText(text, 0, 0);
+      if (preset.stroke) {
+        lowCtx.lineWidth = preset.stroke;
+        lowCtx.lineJoin = "round";
+        lowCtx.strokeStyle = color;
+        lowCtx.strokeText(text, 0, 0);
+      }
+      lowCtx.restore();
+    }
+    function updateSmart(dt) {
+      state.phaseTime += dt;
+      if (state.phase === "holdStart") {
+        const duration = state.smartOverflow ? .9 : readingTime(state.messages[state.messageIndex] || "");
+        if (state.phaseTime >= duration) {
+          state.phase = state.smartOverflow ? "pan" : "transition";
+          state.phaseTime = 0;
+        }
+      } else if (state.phase === "pan") {
+        const step = Number($("speed").value) / Math.max(1, Number($("dotSize").value)) * dt;
+        const direction = Math.sign(state.smartEndX - state.smartX);
+        state.smartX += direction * step;
+        if ((direction <= 0 && state.smartX <= state.smartEndX) || (direction >= 0 && state.smartX >= state.smartEndX)) {
+          state.smartX = state.smartEndX;
+          state.phase = "holdEnd";
+          state.phaseTime = 0;
+        }
+      } else if (state.phase === "holdEnd") {
+        if (state.phaseTime >= 1.15) {
+          state.phase = "transition";
+          state.phaseTime = 0;
+        }
+      } else if (state.phase === "transition" && state.phaseTime >= Number($("transitionSpeed").value) / 1000) {
+        nextMessage();
+      }
+    }
+    function hexToRgb(hex) {
+      const n = parseInt(hex.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255];
+    }
+    function drawDots() {
+      const W = canvas.width, H = canvas.height, p = state.pitch, r = Math.max(1.1, p * .37);
+      ctx.fillStyle = "#030303"; ctx.fillRect(0,0,W,H);
+      if ($("inactive").checked) {
+        ctx.beginPath();
+        for (let y=0; y<state.gridH; y++) for (let x=0; x<state.gridW; x++) {
+          ctx.moveTo((x+.5)*p+r, (y+.5)*p); ctx.arc((x+.5)*p,(y+.5)*p,r,0,Math.PI*2);
+        }
+        ctx.fillStyle = "#171713"; ctx.fill();
+      }
+      const image = lowCtx.getImageData(0,0,state.gridW,state.gridH).data;
+      const groups = new Map();
+      const fallback = hexToRgb(currentColor());
+      for (let y=0; y<state.gridH; y++) for (let x=0; x<state.gridW; x++) {
+        const i=(y*state.gridW+x)*4, a=image[i+3]; if (a < 35) continue;
+        let rr=image[i], gg=image[i+1], bb=image[i+2];
+        const nearWhite = Math.max(rr,gg,bb)-Math.min(rr,gg,bb) < 18;
+        if (nearWhite) [rr,gg,bb] = fallback;
+        rr=Math.round(rr/32)*32; gg=Math.round(gg/32)*32; bb=Math.round(bb/32)*32;
+        const key=`rgb(${Math.min(rr,255)},${Math.min(gg,255)},${Math.min(bb,255)})`;
+        if (!groups.has(key)) groups.set(key, []); groups.get(key).push([x,y]);
+      }
+      for (const [color, dots] of groups) {
+        ctx.beginPath();
+        for (const [x,y] of dots) { ctx.moveTo((x+.5)*p+r,(y+.5)*p); ctx.arc((x+.5)*p,(y+.5)*p,r,0,Math.PI*2); }
+        ctx.fillStyle=color;
+        if ($("glow").checked) { ctx.shadowColor=color; ctx.shadowBlur=p*.9; }
+        ctx.fill(); ctx.shadowBlur=0;
+      }
+    }
+    function renderHorizontal(dt) {
+      if (!state.paused) state.offset += Number($("speed").value) / Math.max(1, Number($("dotSize").value)) * dt;
+      const left = $("direction").value === "left";
+      const x = left ? state.gridW-state.offset : -state.width+state.offset;
+      if ((left && x+state.width < 0) || (!left && x > state.gridW)) nextMessage();
+      drawText(state.messages[state.messageIndex] || "", x, state.gridH/2 + state.gridH*.02, state.messageIndex);
+    }
+    function renderSmart(dt) {
+      if (!state.paused) updateSmart(dt);
+      const centerY = state.gridH / 2 + state.gridH * .02;
+      if (state.phase !== "transition") {
+        drawText(state.messages[state.messageIndex] || "", state.smartX, centerY, state.messageIndex);
+        return;
+      }
+      const progress = easeInOut(Math.min(1, state.phaseTime / (Number($("transitionSpeed").value) / 1000)));
+      const nextIndex = (state.messageIndex + 1) % state.messages.length;
+      const nextPosition = smartPositions(nextIndex).start;
+      drawText(state.messages[state.messageIndex] || "", state.smartX, centerY - progress * state.gridH, state.messageIndex);
+      drawText(state.messages[nextIndex] || "", nextPosition, centerY + (1 - progress) * state.gridH, nextIndex);
+    }
+    function render(timestamp) {
+      if (!state.running) return;
+      if (!state.lastTime) state.lastTime=timestamp;
+      const dt=Math.min(.06,(timestamp-state.lastTime)/1000); state.lastTime=timestamp;
+      lowCtx.clearRect(0,0,state.gridW,state.gridH);
+      if ($("animationMode").value === "smart") renderSmart(dt);
+      else renderHorizontal(dt);
+      drawDots(); requestAnimationFrame(render);
+    }
+    function updateWakeBadge(status) {
+      wakeBadge.classList.remove("active", "unavailable");
+      if (status === "active") wakeBadge.classList.add("active");
+      if (status === "unavailable") wakeBadge.classList.add("unavailable");
+      const label = status === "active" ? t("wakeActive") : status === "unavailable" ? t("wakeUnavailable") : t("wakeChecking");
+      wakeBadge.title = label; wakeBadge.setAttribute("aria-label", label);
+    }
+    async function requestWakeLock(showResult = true) {
+      if (!$("keepAwake").checked) { updateWakeBadge("unavailable"); return; }
+      if (!("wakeLock" in navigator)) {
+        updateWakeBadge("unavailable");
+        if (showResult) showToast(t("wakeDenied"));
+        return;
+      }
+      try {
+        if (state.wakeLock) return;
+        state.wakeLock = await navigator.wakeLock.request("screen");
+        updateWakeBadge("active");
+        state.wakeLock.addEventListener("release", () => {
+          state.wakeLock = null;
+          if (state.running && document.visibilityState === "visible" && $("keepAwake").checked) updateWakeBadge("unavailable");
+        });
+        if (showResult) showToast(t("wakeOn"));
+      } catch (_) {
+        state.wakeLock = null; updateWakeBadge("unavailable");
+        if (showResult) showToast(t("wakeDenied"));
+      }
+    }
+    function releaseWakeLock() {
+      const lock = state.wakeLock; state.wakeLock = null;
+      if (lock) lock.release().catch(() => {});
+      updateWakeBadge("checking");
+    }
+    async function enterFullscreen() {
+      const target = display;
+      try {
+        if (!document.fullscreenElement && target.requestFullscreen) await target.requestFullscreen();
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(()=>{});
+        if (!document.fullscreenElement && !target.requestFullscreen) showToast(t("fullscreenUnavailable"));
+      } catch (_) { showToast(t("fullscreenUnavailable")); }
+    }
+    function startDisplay() {
+      state.messages=getMessages();
+      if (!state.messages.length) { showToast(t("needText")); $("messages").focus(); return; }
+      save(); editor.hidden=true; display.hidden=false; state.running=true; state.paused=false; state.messageIndex=0; state.lastTime=0;
+      $("pauseButton").textContent="Ⅱ"; resizeCanvas(); resetMessage(); enterFullscreen(); requestWakeLock(); requestAnimationFrame(render); showControls();
+    }
+    function stopDisplay() {
+      state.running=false; display.hidden=true; editor.hidden=false;
+      releaseWakeLock();
+      if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+    }
+    function togglePause() { state.paused=!state.paused; $("pauseButton").textContent=state.paused ? "▶" : "Ⅱ"; showToast(state.paused ? t("paused") : t("resumed")); }
+    function showControls() { controls.classList.add("visible"); clearTimeout(state.hideTimer); state.hideTimer=setTimeout(()=>controls.classList.remove("visible"),2800); }
+
+    $("startButton").addEventListener("click", startDisplay);
+    $("pauseButton").addEventListener("click", e=>{ e.stopPropagation(); togglePause(); showControls(); });
+    $("editButton").addEventListener("click", e=>{ e.stopPropagation(); stopDisplay(); });
+    $("fullscreenButton").addEventListener("click", e=>{ e.stopPropagation(); enterFullscreen(); showControls(); });
+    display.addEventListener("click", showControls);
+    window.addEventListener("resize", ()=>{ if (state.running) resizeCanvas(); });
+    document.addEventListener("keydown", e=>{
+      if (!state.running) { if ((e.metaKey||e.ctrlKey) && e.key==="Enter") startDisplay(); return; }
+      if (e.code==="Space") { e.preventDefault(); togglePause(); }
+      else if (e.key.toLowerCase()==="e" || e.key==="Escape") stopDisplay();
+      else if (e.key.toLowerCase()==="f") enterFullscreen();
+      else if (e.key==="ArrowRight") { $("speed").value=Math.min(600,Number($("speed").value)+10); updateOutputs(); }
+      else if (e.key==="ArrowLeft") { $("speed").value=Math.max(30,Number($("speed").value)-10); updateOutputs(); }
+    });
+    fields.forEach(id=>$(id).addEventListener("input",()=>{ updateOutputs(); save(); }));
+    $("language").addEventListener("change", e=>setLanguage(e.target.value));
+    $("keepAwake").addEventListener("change", () => {
+      if (!state.running) return;
+      if ($("keepAwake").checked) requestWakeLock(); else releaseWakeLock();
+    });
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && state.running && $("keepAwake").checked && !state.wakeLock) requestWakeLock(false);
+    });
+    document.querySelectorAll("[data-symbol]").forEach(btn=>btn.addEventListener("click",()=>insertSymbol(btn.dataset.symbol)));
+    $("fileInput").addEventListener("change",e=>readFile(e.target.files[0]));
+    const zone=$("fileZone");
+    ["dragenter","dragover"].forEach(type=>zone.addEventListener(type,e=>{e.preventDefault();zone.classList.add("drag");}));
+    ["dragleave","drop"].forEach(type=>zone.addEventListener(type,e=>{e.preventDefault();zone.classList.remove("drag");}));
+    zone.addEventListener("drop",e=>readFile(e.dataTransfer.files[0]));
+    load(); updateOutputs();
+  })();
+  </script>
+</body>
+</html>
+
