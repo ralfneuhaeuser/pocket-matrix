@@ -103,6 +103,19 @@
     .help summary::after { content: "+"; color: var(--accent); font-size: 1.35rem; line-height: 1; }
     .help[open] summary::after { content: "−"; }
     .help summary:hover { background: rgba(255,176,0,.06); }
+    .option-panel { border-color: rgba(255,176,0,.48); }
+    .option-panel > summary {
+      min-height: 56px; padding: 16px 20px;
+      background: rgba(255,176,0,.12); color: #fff2ce;
+      font-weight: 750; border-left: 4px solid var(--accent);
+    }
+    .option-panel > summary::after {
+      display: grid; place-items: center; width: 28px; height: 28px;
+      border: 1px solid rgba(255,176,0,.5); border-radius: 7px;
+      background: rgba(255,176,0,.09); flex-shrink: 0;
+    }
+    .option-panel > summary:hover { background: rgba(255,176,0,.19); }
+    .option-panel > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
     .help-content { padding: 0 16px 16px; border-top: 1px solid var(--line); color: #b8b5aa; font-size: .9rem; }
     .help-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px 22px; padding-top: 15px; }
     .help h2 { margin: 0 0 6px; color: var(--ink); font-size: .92rem; }
@@ -258,8 +271,8 @@ Hier könnte deine nächste Idee stehen ✨</textarea>
           <div class="tiny" id="iconHint">Symbol antippen, Emoji-Tastatur nutzen oder Kürzel eingeben: <b>:vinyl:</b> <b>:headphones:</b> <b>:music:</b> <b>:heart:</b></div>
         </div>
 
-        <details class="help">
-          <summary id="optionsSummary">Weitere Möglichkeiten &amp; Einstellungen</summary>
+        <details class="help option-panel" id="contentOptions">
+          <summary id="contentOptionsSummary">Textdatei &amp; QR-Code (optional)</summary>
         <div class="section">
           <div class="section-head">
             <h2 class="section-title" id="fileSectionTitle">2 · Texte aus Datei (optional)</h2>
@@ -296,6 +309,9 @@ Hier könnte deine nächste Idee stehen ✨</textarea>
           </div>
         </div>
 
+        </details>
+        <details class="help option-panel">
+          <summary id="optionsSummary">Darstellungsoptionen</summary>
         <div class="section">
           <div class="section-head"><h2 class="section-title" id="settingsSectionTitle">4 · Anzeige einstellen</h2><span class="hint" id="settingsSectionHint">Wird auf diesem Gerät gespeichert</span></div>
           <div class="settings-grid">
@@ -318,8 +334,8 @@ Hier könnte deine nächste Idee stehen ✨</textarea>
               </select>
             </div>
             <div class="setting">
-              <label for="speed"><span id="speedLabel">Laufgeschwindigkeit</span><output id="speedOut">200 px/s</output></label>
-              <input id="speed" type="range" min="30" max="600" step="10" value="200">
+              <label for="speed"><span id="speedLabel">Laufgeschwindigkeit</span><output id="speedOut">760 px/s</output></label>
+              <input id="speed" type="range" min="200" max="1200" step="20" value="760">
             </div>
             <div class="setting">
               <label for="transitionSpeed"><span id="transitionLabel">Vertikaler Wechsel</span><output id="transitionOut">420 ms</output></label>
@@ -351,10 +367,12 @@ Hier könnte deine nächste Idee stehen ✨</textarea>
             <label class="check"><input id="inactive" type="checkbox" checked> <span id="inactiveLabel">Punktraster zeigen</span></label>
             <label class="check"><input id="randomColors" type="checkbox"> <span id="randomLabel">Farben wechseln</span></label>
             <label class="check"><input id="keepAwake" type="checkbox" checked> <span id="awakeLabel">Bildschirm aktiv halten</span></label>
-            <label class="check"><input id="creditEnabled" type="checkbox" checked> <span id="creditLabel">Credit am Ende anzeigen</span></label>
+            <label class="check"><input id="creditEnabled" type="checkbox"> <span id="creditLabel">Credit am Ende anzeigen</span></label>
+          </div>
+          <div class="actions" style="margin-top:20px">
+            <button type="button" class="button" id="resetAppearance">Anzeigeeinstellungen zurücksetzen</button>
           </div>
         </div>
-
         </details>
         <div class="section">
           <div class="actions">
@@ -363,7 +381,7 @@ Hier könnte deine nächste Idee stehen ✨</textarea>
           </div>
         </div>
       </div>
-      <p class="privacy"><span id="privacyText">Alles bleibt lokal auf diesem Gerät. Keine Anmeldung, kein Upload, keine Internetverbindung nötig.</span><span class="version">v0.5.0</span></p>
+      <p class="privacy"><span id="privacyText">Alles bleibt lokal auf diesem Gerät. Keine Anmeldung, kein Upload, keine Internetverbindung nötig.</span><span class="version">v0.5.1</span></p>
       <footer class="privacy"><span id="aiCredit">Idee und Umsetzung: Ralf Neuhäuser mit KI-Unterstützung.</span> <a href="https://ralfneuhaeuser.de" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">ralfneuhaeuser.de</a> · <a href="https://github.com/ralfneuhaeuser/pocket-matrix" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline">GitHub · Pocket Matrix</a></footer>
     </div>
   </section>
@@ -2781,7 +2799,9 @@ var qrcode = function() {
     function t(key) { return (translations[state.language] || translations.de)[key] || key; }
     function setLanguage(language, persist = true) {
       state.language = ["de", "en", "ja"].includes(language) ? language : "de";
-      $("optionsSummary").textContent = {de: "Weitere Möglichkeiten & Einstellungen", en: "More options & settings", ja: "その他の機能と設定"}[state.language];
+      $("optionsSummary").textContent = {de: "Darstellungsoptionen", en: "Display options", ja: "表示設定"}[state.language];
+      $("contentOptionsSummary").textContent = {de: "Textdatei & QR-Code (optional)", en: "Text file & QR code (optional)", ja: "テキストファイルとQRコード（任意）"}[state.language];
+      $("resetAppearance").textContent = {de: "Anzeigeeinstellungen zurücksetzen", en: "Reset display settings", ja: "表示設定をリセット"}[state.language];
       document.documentElement.lang = state.language;
       $("aiCredit").textContent = {de: "Idee und Umsetzung: Ralf Neuhäuser mit KI-Unterstützung.", en: "Concept and implementation: Ralf Neuhäuser with AI assistance.", ja: "企画・制作：Ralf Neuhäuser（AIの支援を活用）。"}[state.language];
       $("language").value = state.language;
@@ -2821,6 +2841,7 @@ var qrcode = function() {
     function save() {
       try {
         const data = {};
+        data.appearanceDefaultsVersion = 2;
         fields.forEach(id => { const el = $(id); data[id] = el.type === "checkbox" ? el.checked : el.value; });
         localStorage.setItem("pocket-matrix-v1", JSON.stringify(data));
       } catch (_) {}
@@ -2832,12 +2853,14 @@ var qrcode = function() {
         const legacy = null;
         const data = JSON.parse(current || prior || legacy || "null");
         if (!data) { setLanguage("de", false); return; }
+        if (data.appearanceDefaultsVersion !== 2) data.creditEnabled = false;
         if (data.messages === previousDefaultMessages) data.messages = $("messages").defaultValue.trim();
         if (legacy && String(data.speed) === "90") data.speed = "200";
         fields.forEach(id => { if (!(id in data)) return; const el = $(id); el.type === "checkbox" ? el.checked = !!data[id] : el.value = data[id]; });
       } catch (_) {}
       setLanguage($("language").value || "de", false);
       updateOutputs();
+      save();
     }
     function updateOutputs() {
       $("speedOut").value = $("speed").value + " px/s";
@@ -3039,21 +3062,36 @@ var qrcode = function() {
         ctx.fillText(caption, W/2, Math.min(H - fontSize, top + card + labelSpace * .58), W * .9);
       }
     }
+    const creditCanvas = document.createElement("canvas");
+    const creditCtx = creditCanvas.getContext("2d", { willReadFrequently: true });
     function drawCredit() {
-      const color = paperMode() ? "#111" : currentColor();
-      const centerY = state.gridH / 2;
-      const line1 = "Made with love and support from ChatGPT";
-      const line2 = "by ralfneuhaeuser.de";
-      let size = Math.max(5, Math.floor(state.gridH * .23));
-      lowCtx.save(); lowCtx.textAlign = "center"; lowCtx.textBaseline = "middle"; lowCtx.fillStyle = color;
-      lowCtx.font = `800 ${size}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
-      while (size > 5 && lowCtx.measureText(line1).width > state.gridW * .9) {
-        size--; lowCtx.font = `800 ${size}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
+      // Fine dedicated LED grid: credit legibility does not depend on selected dot size.
+      const W = canvas.width, H = canvas.height;
+      const pitch = Math.max(2, Math.min(W / 320, H / 160));
+      const cols = Math.max(1, Math.floor(W / pitch)), rows = Math.max(1, Math.floor(H / pitch));
+      if (creditCanvas.width !== cols) creditCanvas.width = cols;
+      if (creditCanvas.height !== rows) creditCanvas.height = rows;
+      creditCtx.clearRect(0, 0, cols, rows);
+      const lines = ["Made with ❤️ and AI by", "RalfNeuhaeuser.de"];
+      creditCtx.fillStyle = "#fff"; creditCtx.textAlign = "center"; creditCtx.textBaseline = "middle";
+      let size = Math.min(cols * .075, rows * .18);
+      creditCtx.font = `800 ${size}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
+      const widest = Math.max(...lines.map(line => creditCtx.measureText(line).width));
+      if (widest > cols * .88) size *= cols * .88 / widest;
+      creditCtx.font = `800 ${size}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
+      lines.forEach((line, index) => creditCtx.fillText(line, cols / 2, rows / 2 + (index - .5) * size * 1.55));
+      const pixels = creditCtx.getImageData(0, 0, cols, rows).data;
+      ctx.save(); ctx.shadowBlur = 0;
+      ctx.fillStyle = paperMode() ? "#f7f4ea" : "#030303"; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = paperMode() ? "#111" : currentColor();
+      const radius = pitch * .39;
+      ctx.beginPath();
+      for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+        if (pixels[(y * cols + x) * 4 + 3] < 80) continue;
+        ctx.moveTo((x + .5) * pitch + radius, (y + .5) * pitch);
+        ctx.arc((x + .5) * pitch, (y + .5) * pitch, radius, 0, Math.PI * 2);
       }
-      lowCtx.fillText(line1, state.gridW/2, centerY - size * .68);
-      lowCtx.font = `700 ${Math.max(5, Math.floor(size * .82))}px ui-sans-serif, system-ui, -apple-system, sans-serif`;
-      lowCtx.fillText(line2, state.gridW/2, centerY + size * .72);
-      lowCtx.restore();
+      ctx.fill(); ctx.restore();
     }
     function drawDots() {
       const W = canvas.width, H = canvas.height, p = state.pitch, r = Math.max(1.1, p * .37);
@@ -3126,7 +3164,8 @@ var qrcode = function() {
       if (slide.type === "credit") {
         if (!state.paused) state.phaseTime += dt;
         drawCredit();
-        if (state.phaseTime >= 3.6) nextMessage();
+        if (state.phaseTime >= 5.5) nextMessage();
+        scheduleFrame(); return;
       } else if ($("animationMode").value === "smart") renderSmart(dt);
       else renderHorizontal(dt);
       drawDots(); scheduleFrame();
@@ -3199,6 +3238,14 @@ var qrcode = function() {
     function togglePause() { state.paused=!state.paused; $("pauseButton").textContent=state.paused ? "▶" : "Ⅱ"; showToast(state.paused ? t("paused") : t("resumed")); }
     function showControls() { controls.classList.add("visible"); clearTimeout(state.hideTimer); state.hideTimer=setTimeout(()=>controls.classList.remove("visible"),2800); }
 
+    $("resetAppearance").addEventListener("click", () => {
+      const defaults = {animationMode: "smart", fontStyle: "standard", speed: "760", transitionSpeed: "420", dotSize: "8", direction: "left", textColor: "#ffb000", displayTheme: "led", glow: true, inactive: true, randomColors: false, keepAwake: true, creditEnabled: false};
+      Object.entries(defaults).forEach(([id, value]) => {
+        const el = $(id); if (el.type === "checkbox") el.checked = value; else el.value = value;
+      });
+      updateOutputs(); updateThemeButton(); save();
+      showToast({de: "Anzeige zurückgesetzt – Texte und QR-Inhalte bleiben erhalten.", en: "Display reset – texts and QR content kept.", ja: "表示設定をリセットしました。テキストとQRの内容は保持されます。"}[state.language]);
+    });
     $("startButton").addEventListener("click", startDisplay);
     $("pauseButton").addEventListener("click", e=>{ e.stopPropagation(); togglePause(); showControls(); });
     $("editButton").addEventListener("click", e=>{ e.stopPropagation(); stopDisplay(); });
@@ -3211,8 +3258,8 @@ var qrcode = function() {
       if (e.code==="Space") { e.preventDefault(); togglePause(); }
       else if (e.key.toLowerCase()==="e" || e.key==="Escape") stopDisplay();
       else if (e.key.toLowerCase()==="f") toggleFullscreen();
-      else if (e.key==="ArrowRight") { $("speed").value=Math.min(600,Number($("speed").value)+10); updateOutputs(); }
-      else if (e.key==="ArrowLeft") { $("speed").value=Math.max(30,Number($("speed").value)-10); updateOutputs(); }
+      else if (e.key==="ArrowRight") { $("speed").value=Math.min(Number($("speed").max),Number($("speed").value)+Number($("speed").step)); updateOutputs(); }
+      else if (e.key==="ArrowLeft") { $("speed").value=Math.max(Number($("speed").min),Number($("speed").value)-Number($("speed").step)); updateOutputs(); }
     });
     fields.forEach(id=>$(id).addEventListener("input",()=>{ updateOutputs(); if (id === "displayTheme") updateThemeButton(); save(); }));
     $("language").addEventListener("change", e=>setLanguage(e.target.value));

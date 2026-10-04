@@ -23,7 +23,9 @@ Querformat ist für lange Texte meist hilfreicher. Leertaste pausiert, E/Escape 
 
 ## Prüfstand und Grenzen
 
-Version **0.5.0**, erste öffentliche Fassung vom 4. Oktober 2026.
+Version **0.5.1**, aktualisiert am 4. Oktober 2026. Ralf bestätigt am MacBook die neue Einstiegsstruktur, Credit an/aus und ein für ihn angenehmes Tempo. Erstveröffentlichung 0.5.0 am selben Tag.
+
+Textdatei/QR-Code und Darstellungsoptionen liegen in getrennten, anfangs geschlossenen Boxen. „Anzeigeeinstellungen zurücksetzen“ stellt 760 px/s und Credit aus wieder her, ohne Text, QR-Inhalt oder Sprache zu löschen. Der Tempobereich beträgt 200–1200 px/s. Gespeicherte Geschwindigkeit bleibt beim Laden erhalten; alte gespeicherte Credit-Auswahl wird einmalig auf aus korrigiert. Der neue zweizeilige Credit nutzt einen feineren Matrix-Look.
 
 Start/Pause/Wiederstart, Paper-Modus, Rückkehr in die Einstellungen und Vollbildwechsel wurden manuell in Chrome geprüft. Japanische Schriftzeichen benötigen passende Systemschriften; ihre Lesbarkeit im Punktraster muss am Zielgerät geprüft werden. Die japanische Übersetzung wurde noch nicht muttersprachlich gegengelesen.
 

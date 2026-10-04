@@ -1,5 +1,16 @@
 # Entwicklungsgeschichte
 
+## 0.5.1 — 2026-10-04 — übersichtlicher Start und lesbarer Credit
+
+- Textdatei/QR-Code und Darstellung in zwei getrennten, hervorgehobenen optionalen Aufklappboxen.
+- Anzeigeeinstellungen zurücksetzen ohne Verlust von Texten, QR-Inhalten oder Sprache.
+- Tempo 200–1200 px/s, Standard 760; vorhandene individuelle Geschwindigkeit bleibt erhalten.
+- Optionaler zweizeiliger Matrix-Credit, in allen Sprachen „Made with ❤️ and AI by“ / „RalfNeuhaeuser.de“; feinere eigene Rasterung.
+- Credit standardmäßig aus; alte gespeicherte Credit-Auswahl einmalig auf aus umgestellt, spätere bewusste Wahl bleibt bestehen.
+- Mehrsprachiger KI-Transparenzhinweis und Website-/Repository-Links im Footer.
+- Ralf bestätigt MacBook-Sichtprüfung von Credit an/aus, Tempo und Einstiegsstruktur. Kein vollständiger Android-/Gerätetest.
+- Simulierte Regressionstests einschließlich Reset ohne Inhaltsverlust bestanden.
+
 ## 0.5.0 — 2026-10-04 — erste öffentliche Fassung
 
 - Pocket-Matrix-Titel, neutrale Beispieltexte und eigener Einstellungsspeicher.
